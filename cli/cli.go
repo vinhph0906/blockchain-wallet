@@ -104,11 +104,11 @@ func (cli *CommandLine) getBalance(address string) {
 func (cli *CommandLine) getHistory(address string) {
 	chain := blockchain.ContinueBlockChain(address)
 	defer chain.Database.Close()
-	UTXOs := chain.FindUnspentTransactions(address)
+	transactions := chain.FindTransactions(address)
 	fmt.Printf("History of %s: \n", address)
-	for i, out := range UTXOs {
-		transactions, _ := json.Marshal(out)
-		fmt.Printf("%d: Transactions: %s\n", i, string(transactions))
+	for i, transaction := range transactions {
+		transactionsJson, _ := json.Marshal(transaction)
+		fmt.Printf("%d: Transactions: %s\n", i, string(transactionsJson))
 	}
 
 	// fmt.Printf("Balance of %s: %d\n", address, balance)

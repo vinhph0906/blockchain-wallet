@@ -194,6 +194,43 @@ func (chain *BlockChain) FindUnspentTransactions(address string) []Transaction {
 	return unspentTxs
 }
 
+func (chain *BlockChain) FindTransactions(address string) []Transaction {
+	var txs []Transaction
+
+	iter := chain.Iterator()
+
+	for {
+		block := iter.Next()
+
+		for _, tx := range block.Transactions {
+			appended := false
+			if !tx.IsCoinbase() {
+				for _, in := range tx.Inputs {
+					if in.CanUnlock(address) {
+						txs = append(txs, *tx)
+						appended = true
+						break
+					}
+				}
+			}
+			if !appended {
+				for _, out := range tx.Outputs {
+					if out.CanBeUnlocked(address) {
+						txs = append(txs, *tx)
+						break
+					}
+				}
+			}
+
+		}
+
+		if len(block.PrevHash) == 0 {
+			break
+		}
+	}
+	return txs
+}
+
 func (chain *BlockChain) FindUTXO(address string) []TxOutput {
 	var UTXOs []TxOutput
 	unspentTransactions := chain.FindUnspentTransactions(address)
