@@ -19,6 +19,7 @@ type CommandLine struct{}
 func (cli *CommandLine) printUsage() {
 	fmt.Println("Usage: ")
 	fmt.Println("getbalance -address ADDRESS - get balance for ADDRESS")
+	fmt.Println("gethistory -address ADDRESS - get history for ADDRESS")
 	fmt.Println("createblockchain -address ADDRESS creates a blockchain and rewards the mining fee")
 	fmt.Println("printchain - Prints the blocks in the chain")
 	fmt.Println("send -from FROM -to TO -amount AMOUNT - Send amount of coins from one address to another")
@@ -100,6 +101,18 @@ func (cli *CommandLine) getBalance(address string) {
 
 	fmt.Printf("Balance of %s: %d\n", address, balance)
 }
+func (cli *CommandLine) getHistory(address string) {
+	chain := blockchain.ContinueBlockChain(address)
+	defer chain.Database.Close()
+	UTXOs := chain.FindUnspentTransactions(address)
+	fmt.Printf("History of %s: \n", address)
+	for i, out := range UTXOs {
+		transactions, _ := json.Marshal(out)
+		fmt.Printf("%d: Transactions: %s\n", i, string(transactions))
+	}
+
+	// fmt.Printf("Balance of %s: %d\n", address, balance)
+}
 
 func (cli *CommandLine) send(from, to string, amount int) {
 	chain := blockchain.ContinueBlockChain(from)
@@ -117,6 +130,7 @@ func (cli *CommandLine) Run() {
 	cli.validateArgs()
 
 	getBalanceCmd := flag.NewFlagSet("getbalance", flag.ExitOnError)
+	getHistoryCmd := flag.NewFlagSet("gethistory", flag.ExitOnError)
 	createBlockchainCmd := flag.NewFlagSet("createblockchain", flag.ExitOnError)
 	sendCmd := flag.NewFlagSet("send", flag.ExitOnError)
 	printChainCmd := flag.NewFlagSet("printchain", flag.ExitOnError)
@@ -124,6 +138,7 @@ func (cli *CommandLine) Run() {
 	listAddressesCmd := flag.NewFlagSet("listaddresses", flag.ExitOnError)
 
 	getBalanceAddress := getBalanceCmd.String("address", "", "The address to get balance for")
+	getHistoryAddress := getHistoryCmd.String("address", "", "The address to get history for")
 	createBlockchainAddress := createBlockchainCmd.String("address", "", "The address to send genesis block reward to")
 	sendFrom := sendCmd.String("from", "", "Source wallet address")
 	sendTo := sendCmd.String("to", "", "Destination wallet address")
@@ -132,6 +147,11 @@ func (cli *CommandLine) Run() {
 	switch os.Args[1] {
 	case "getbalance":
 		err := getBalanceCmd.Parse(os.Args[2:])
+		if err != nil {
+			log.Panic(err)
+		}
+	case "gethistory":
+		err := getHistoryCmd.Parse(os.Args[2:])
 		if err != nil {
 			log.Panic(err)
 		}
@@ -171,6 +191,14 @@ func (cli *CommandLine) Run() {
 			runtime.Goexit()
 		}
 		cli.getBalance(*getBalanceAddress)
+	}
+
+	if getHistoryCmd.Parsed() {
+		if *getHistoryAddress == "" {
+			getHistoryCmd.Usage()
+			runtime.Goexit()
+		}
+		cli.getHistory(*getHistoryAddress)
 	}
 
 	if createBlockchainCmd.Parsed() {

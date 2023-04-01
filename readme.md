@@ -8,6 +8,7 @@
 `blockchain-wallet` with commands:
 ````
 getbalance -address ADDRESS - get balance for ADDRESS
+gethistory -address ADDRESS - get history for ADDRESS
 createblockchain -address ADDRESS creates a blockchain and rewards the mining fee
 printchain - Prints the blocks in the chain
 send -from FROM -to TO -amount AMOUNT - Send amount of coins from one address to another
